@@ -3,7 +3,7 @@ import express from "express";
 import zeromq from "zeromq";
 import zlib from "zlib";
 
-import { megaships, updateMegaship } from "./db";
+import { findMegaships, updateMegaship } from "./db";
 import { EDDN } from "./eddn";
 
 const SERVER_PORT = 3000;
@@ -16,10 +16,9 @@ const db = drizzle(DATABASE_URL);
 const eddi = new zeromq.Subscriber();
 
 app.get("/", async (req, res) => {
-  // TODO filter by latest maintenance tick
   // TODO add powerplay filter
   // TODO add sort by distance to reference system
-  res.send(await db.select().from(megaships));
+  res.send(findMegaships(db, true));
 });
 
 app.listen(SERVER_PORT, async () => {

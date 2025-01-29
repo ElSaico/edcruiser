@@ -1,18 +1,47 @@
-import { sql } from "drizzle-orm";
+import { isThursday, previousThursday, setHours, startOfHour } from "date-fns";
+import { UTCDate } from "@date-fns/utc";
+import { eq } from "drizzle-orm";
 import { LibSQLDatabase } from "drizzle-orm/libsql";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 import { EDDN, FSSSignalDiscovered } from "./eddn";
 
-export const megaships = sqliteTable("megaships", {
-  name: text().primaryKey(),
-  system_id: integer().notNull(),
-  system_name: text().notNull(),
-  system_x: real().notNull(),
-  system_y: real().notNull(),
-  system_z: real().notNull(),
-  last_update: integer().notNull(),
-});
+const WEEKLY_TICK_HOUR = 7;
+
+function getWeeklyTick(date: Date = new UTCDate()) {
+  if (!isThursday(date) || date.getHours() < WEEKLY_TICK_HOUR) {
+    date = previousThursday(date);
+  }
+  return startOfHour(setHours(date, WEEKLY_TICK_HOUR));
+}
+
+export const megaships = sqliteTable(
+  "megaships",
+  {
+    name: text("name").notNull(),
+    week: integer("week", { mode: "timestamp" }).notNull(),
+    systemId: integer("system_id").notNull(),
+    systemName: text("system_name").notNull(),
+    systemX: real("system_x").notNull(),
+    systemY: real("system_y").notNull(),
+    systemZ: real("system_z").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.name, table.week] })],
+);
+
+export async function findMegaships(db: LibSQLDatabase, afterTick: boolean) {
+  const query = db.select().from(megaships);
+  if (afterTick) {
+    return query.where(eq(megaships.week, getWeeklyTick()));
+  }
+  return query;
+}
 
 export async function updateMegaship(
   db: LibSQLDatabase,
@@ -23,23 +52,12 @@ export async function updateMegaship(
     .insert(megaships)
     .values({
       name: signal.SignalName,
-      system_id: event.message.SystemAddress,
-      system_name: event.message.StarSystem,
-      system_x: event.message.StarPos[0],
-      system_y: event.message.StarPos[1],
-      system_z: event.message.StarPos[2],
-      last_update: Date.parse(signal.timestamp),
+      week: getWeeklyTick(new Date(signal.timestamp)),
+      systemId: event.message.SystemAddress,
+      systemName: event.message.StarSystem,
+      systemX: event.message.StarPos[0],
+      systemY: event.message.StarPos[1],
+      systemZ: event.message.StarPos[2],
     })
-    .onConflictDoUpdate({
-      target: megaships.name,
-      set: {
-        system_id: sql`excluded.system_id`,
-        system_name: sql`excluded.system_name`,
-        system_x: sql`excluded.system_x`,
-        system_y: sql`excluded.system_y`,
-        system_z: sql`excluded.system_z`,
-        last_update: sql`excluded.last_update`,
-      },
-      setWhere: sql`excluded.last_update > last_update`,
-    });
+    .onConflictDoNothing();
 }

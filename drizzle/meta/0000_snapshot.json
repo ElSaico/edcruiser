@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ddabd71a-279f-4473-b9f0-0d76074ec723",
+  "id": "1d3d74ef-6bc8-4174-ae54-670eb20d5581",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "megaships": {
@@ -10,7 +10,14 @@
         "name": {
           "name": "name",
           "type": "text",
-          "primaryKey": true,
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "week": {
+          "name": "week",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -48,18 +55,19 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "last_update": {
-          "name": "last_update",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "megaships_name_week_pk": {
+          "columns": [
+            "name",
+            "week"
+          ],
+          "name": "megaships_name_week_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     }

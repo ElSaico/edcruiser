@@ -10,7 +10,9 @@
 		"db:migrate": "drizzle-kit migrate"
 	},
 	"dependencies": {
+		"@date-fns/utc": "2.1.0",
 		"@libsql/client": "0.14.0",
+		"date-fns": "4.1.0",
 		"drizzle-orm": "0.39.0",
 		"express": "4.21.2",
 		"zeromq": "6.3.0"
