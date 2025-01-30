@@ -1,9 +1,15 @@
+import { UTCDate } from "@date-fns/utc";
 import { drizzle } from "drizzle-orm/libsql";
 import express from "express";
 import zeromq from "zeromq";
 import zlib from "zlib";
 
-import { findMegaships, updateMegaship, updateSystem } from "./db";
+import {
+  findMegaships,
+  updateMegaship,
+  updateSystem,
+  WEEKLY_TICK_HOUR,
+} from "./db";
 import { FSDJump, FSSSignalDiscovered, Journal } from "./eddn";
 
 const SERVER_PORT = 3000;
@@ -32,12 +38,22 @@ app.listen(SERVER_PORT, async () => {
     switch (event.message.event) {
       case "FSSSignalDiscovered":
         const fss = event.message as FSSSignalDiscovered;
+        const date = new UTCDate(fss.timestamp);
+        if (
+          date.getDay() == 4 &&
+          date.getHours() > WEEKLY_TICK_HOUR &&
+          date.getHours() < WEEKLY_TICK_HOUR + 12
+        ) {
+          // megaships may take several hours to move after the tick, so the
+          // earlier scans might not be indicative of the rest of the week
+          continue;
+        }
         for (const signal of fss.signals) {
           if (signal.SignalType === "Megaship") {
             await updateMegaship(
               db,
               signal.SignalName,
-              new Date(signal.timestamp),
+              new UTCDate(signal.timestamp),
               fss.SystemAddress,
             );
           }

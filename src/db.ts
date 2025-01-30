@@ -13,7 +13,7 @@ import {
 
 import { FSDJump } from "./eddn";
 
-const WEEKLY_TICK_HOUR = 7;
+export const WEEKLY_TICK_HOUR = 7;
 const RE_SHIP_NEW = /^([A-Z\-.'+\d\s]+) ([A-Z][a-z]+)-class ([A-Z][a-z]+)$/;
 const RE_SHIP_OLD = /^([A-Z][a-z]+) Class ([A-Za-z\s]+) ([A-Z]+-\d+)$/;
 const MEGASHIP_CATEGORY_REMAP = new Map<string, string>([
