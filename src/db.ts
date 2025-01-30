@@ -14,6 +14,17 @@ import {
 import { FSDJump } from "./eddn";
 
 const WEEKLY_TICK_HOUR = 7;
+const RE_SHIP_NEW = /^([A-Z\-.'+\d\s]+) ([A-Z][a-z]+)-class ([A-Z][a-z]+)$/;
+const RE_SHIP_OLD = /^([A-Z][a-z]+) Class ([A-Za-z\s]+) ([A-Z]+-\d+)$/;
+const MEGASHIP_CATEGORY_REMAP = new Map<string, string>([
+  ["Agricultural Vessel", "Cropper"],
+  ["Bulk Cargo Ship", "Hauler"],
+  ["Prison Ship", "Reformatory"],
+  ["Science Vessel", "Researcher"],
+  ["Survey Vessel", "Surveyor"],
+  ["Tanker", "Tanker"],
+  ["Tourist Ship", "Traveller"],
+]);
 
 function getWeeklyTick(date: Date = new UTCDate()) {
   if (!isThursday(date) || date.getHours() < WEEKLY_TICK_HOUR) {
@@ -39,6 +50,9 @@ export const megaships = sqliteTable(
   "megaships",
   {
     name: text("name").notNull(),
+    category: text("category"),
+    shipClass: text("ship_class"),
+    codename: text("codename"),
     week: integer("week", { mode: "timestamp_ms" }).notNull(),
     // we do not set an FK because the user's corresponding FSDJump might come afterwards
     systemId: integer("system_id"),
@@ -46,15 +60,38 @@ export const megaships = sqliteTable(
   (table) => [primaryKey({ columns: [table.name, table.week] })],
 );
 
-export async function findMegaships(db: LibSQLDatabase, afterTick: boolean) {
-  const query = db
-    .select({ name: megaships.name, week: megaships.week, system: systems })
-    .from(megaships)
-    .innerJoin(systems, eq(systems.id64, megaships.systemId));
-  if (afterTick) {
-    return query.where(eq(megaships.week, getWeeklyTick()));
+function parseMegashipName(name: string) {
+  if (RE_SHIP_NEW.test(name)) {
+    // {codename} {class}-class {category}
+    const [_, codename, shipClass, category] = name.match(RE_SHIP_NEW)!;
+    return [codename.trim(), shipClass, category];
+  } else if (RE_SHIP_OLD.test(name)) {
+    // {class} Class {category} {codename}
+    const [_, shipClass, category, codename] = name.match(RE_SHIP_OLD)!;
+    return [codename, shipClass, MEGASHIP_CATEGORY_REMAP.get(category.trim())];
   }
-  return query;
+  return [null, null, null];
+}
+
+function getMegashipUplinkCount(category: string, shipClass: string) {
+  if (category == "Reformatory") return 0;
+  if (shipClass == "Lowell") return 2;
+  return 1;
+}
+
+export async function findMegaships(db: LibSQLDatabase) {
+  return db
+    .select({
+      name: megaships.name,
+      category: megaships.category,
+      shipClass: megaships.shipClass,
+      codename: megaships.codename,
+      week: megaships.week,
+      system: systems,
+    })
+    .from(megaships)
+    .innerJoin(systems, eq(systems.id64, megaships.systemId))
+    .where(eq(megaships.week, getWeeklyTick()));
 }
 
 export async function updateMegaship(
@@ -63,9 +100,17 @@ export async function updateMegaship(
   timestamp: Date,
   systemId: number,
 ) {
+  const [codename, shipClass, category] = parseMegashipName(name);
   await db
     .insert(megaships)
-    .values({ name: name, week: getWeeklyTick(timestamp), systemId: systemId })
+    .values({
+      name,
+      category,
+      shipClass,
+      codename,
+      week: getWeeklyTick(timestamp),
+      systemId,
+    })
     .onConflictDoNothing();
 }
 

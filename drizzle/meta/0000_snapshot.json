@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "552bb893-1c50-4a92-8de8-73e3d0525261",
+  "id": "e14f5471-1bc3-411e-97ba-c25079616b96",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "megaships": {
@@ -12,6 +12,27 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ship_class": {
+          "name": "ship_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "codename": {
+          "name": "codename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "week": {

@@ -1,5 +1,8 @@
 CREATE TABLE `megaships` (
 	`name` text NOT NULL,
+	`category` text,
+	`ship_class` text,
+	`codename` text,
 	`week` integer NOT NULL,
 	`system_id` integer,
 	PRIMARY KEY(`name`, `week`)

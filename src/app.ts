@@ -16,7 +16,7 @@ const eddi = new zeromq.Subscriber();
 
 app.get("/", async (req, res) => {
   // TODO add sort by distance to reference system
-  res.send(await findMegaships(db, true));
+  res.send(await findMegaships(db));
 });
 
 app.listen(SERVER_PORT, async () => {
@@ -45,10 +45,7 @@ app.listen(SERVER_PORT, async () => {
         break;
       case "FSDJump":
         const fsd = event.message as FSDJump;
-        // TODO are there cruisers in uninhabited systems?
-        if (fsd.SystemAllegiance) {
-          await updateSystem(db, fsd);
-        }
+        await updateSystem(db, fsd);
         break;
     }
   }
